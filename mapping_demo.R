@@ -22,16 +22,14 @@
     library(i,character.only = TRUE)
   }
   
-## loading data ----
+## Working with VECTOR data ----
   
-  v_data <- read.csv(here::here("name of file.csv"))
-  r_data <- raster(here::here("name of file.tif"))
+  data <- read.csv(here::here("name of file.csv"))
     
-## sf data handling ----
   
   
   
-## raster data handling ----
+## Working with RASTER data ----
   
   ## loading one raster at a time 
     # loading
@@ -95,6 +93,11 @@
     ## study area 
     mean_ann_temp_126 <- raster::cellStats(bio[[1]], "max")
     mean_ann_temp_585 <- raster::cellStats(bio[[2]], "max")
+    
+    ## saving raster we created
+    # can save as a .asc or .tif extension
+    # .tif is preferred (newer & more efficient)
+    writeRaster(difference, here::here("difference.tif"))
   
 ## BONUS: downloading DEM raster (digital elevation model) ----
   
