@@ -136,7 +136,7 @@ base_canada_map+
 
 #Downloaded shape file for Rocky Mountain National Park here: https://romo-nps.opendata.arcgis.com/datasets/7cb5f22df8c44900a9f6632adb5f96a5/explore?location=40.296464%2C-105.702647%2C7.00
 
-rmnp <- read_sf('./Rocky_Mountain_National_Park_-_Boundary_Polygon/Rocky_Mountain_National_Park_-_Boundary_Polygon/Boundary__Polygon_.shp')
+rmnp <- read_sf('./Rocky_Mountain_National_Park_-_Boundary_Polygon/Boundary__Polygon_.shp')
 
 colorado <- states[states$name == 'Colorado',]
 
