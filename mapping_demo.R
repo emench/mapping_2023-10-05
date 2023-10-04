@@ -12,7 +12,7 @@
              "sp","mapview", "ggmap",
              "tidyverse","ggplot2",
               "here", "rgdal","rgeos",
-              "elevatr","rnaturalearth")
+              "elevatr","rnaturalearth","ggmap")
   
   # installing and loading
   for (i in libs){
@@ -153,6 +153,32 @@ Asclepias_ablicans <- st_as_sf(coords, coords = c('decimalLongitude','decimalLat
 st_crs(Asclepias_ablicans) <- 4326 #assigns WGS84 coordinate system to sf object
 
 mapView(Asclepias_ablicans)
+
+#using ggmap to create static maps that utilize Google Maps 
+
+register_google(key = "api key here-M")  #note, you must register for an API key through Google: https://support.google.com/googleapi/answer/6158862?hl=en
+
+albicans_map_satellite <- get_map("Ensenada, Baja California, Mexico", zoom=5, maptype="satellite", source="google")
+
+ggmap(albicans_map_satellite)+
+  theme_bw()+
+  geom_point(data = as.data.frame(coords), aes(x = coords[, 1], y = coords[, 2]), color = "yellow", size = 1)+
+  theme(axis.text = element_blank(), axis.title = element_blank())
+
+vancouver_map_terrain <- get_map("Vancouver, BC, Canada", zoom=11, maptype="terrain", source="google")
+
+ggmap(vancouver_map_terrain)+
+  theme_bw()+
+  theme(axis.text = element_blank(), axis.title = element_blank())
+
+#ggmap package also includes the potentially handy 'geocode' function
+
+golf_course <- geocode(location = 'university golf club, ubc, vancouver')
+
+ggmap(vancouver_map_terrain)+
+  theme_bw()+
+  theme(axis.text = element_blank(), axis.title = element_blank())+
+  geom_point(data = data.frame(golf_course), aes(x = lon, y = lat), col = 'hotpink', size = 5)
 
 #################################################################################### 
   
