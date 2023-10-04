@@ -42,8 +42,6 @@
   
   states <- ne_states(returnclass = 'sf') #include a layer for state boundaries
   
-  #
-  
 #lets create a basic map just showing some of the above layers, cropping to focus on North America
   
   ggplot() + 
@@ -57,6 +55,8 @@
 #now let's add the coordinates for our species of interest
   
   coords <- albicans[,c("decimalLongitude","decimalLatitude")] #pick out the columns with coordinates
+  
+  #creating a static map with data layers
   
   (albicans_base_map <- ggplot() + 
     geom_sf(data = world_map)+
@@ -132,7 +132,27 @@ base_canada_map+
 base_canada_map+
   coord_sf(crs = "+proj=robin +lon_0=0w") #Robinson projection
 
+### Custom shape files
 
+#Downloaded shape file for Rocky Mountain National Park here: https://romo-nps.opendata.arcgis.com/datasets/7cb5f22df8c44900a9f6632adb5f96a5/explore?location=40.296464%2C-105.702647%2C7.00
+
+rmnp <- read_sf('./Rocky_Mountain_National_Park_-_Boundary_Polygon/Rocky_Mountain_National_Park_-_Boundary_Polygon/Boundary__Polygon_.shp')
+
+colorado <- states[states$name == 'Colorado',]
+
+ggplot()+
+  geom_sf(data = colorado, fill = 'ivory')+
+  geom_sf(data = rmnp, fill = 'darkgreen')
+
+#using mapView for interactive plotting of coordinates
+
+coords
+
+Asclepias_ablicans <- st_as_sf(coords, coords = c('decimalLongitude','decimalLatitude'))
+
+st_crs(Asclepias_ablicans) <- 4326 #assigns WGS84 coordinate system to sf object
+
+mapView(Asclepias_ablicans)
 
 #################################################################################### 
   
