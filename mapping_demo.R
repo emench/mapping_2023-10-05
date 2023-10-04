@@ -12,7 +12,7 @@
              "sp","mapview", "ggmap",
              "tidyverse","ggplot2",
               "here", "rgdal","rgeos",
-              "elevatr")
+              "elevatr","rnaturalearth")
   
   # installing and loading
   for (i in libs){
@@ -21,15 +21,87 @@
     }
     library(i,character.only = TRUE)
   }
+
   
 ## Working with VECTOR data ----
   
-  data <- read.csv(here::here("name of file.csv"))
+  albicans <- read.csv(file = './Asclepias_albicans.csv')
     
+  head(albicans) #note: this file consists of coordinates for A. albicans, downloaded from GBIF and cleaned using the CoordinateCleaner package and manual removal of some anomalous records
   
+## First we need to import our data layers
   
+  world_map = ne_countries(scale = "medium", returnclass = "sf", type = "countries") #background map for first pass: include all of North America
   
-## Working with RASTER data ----
+  lakes50 <- ne_download(scale = 50, type = "lakes", category = "physical", returnclass = 'sf') #include a layer for major lakes
+  
+  rivers50 <- ne_download(scale = 50, type = "rivers_lake_centerlines", category = "physical", returnclass = 'sf') #include a layer for major rivers
+  
+  glaciated_areas50 <- ne_download(scale = 50, type = "glaciated_areas", category = "physical", returnclass = 'sf') #include a layer for glaciated areas
+  
+  states <- ne_states(returnclass = 'sf') #include a layer for state boundaries
+  
+#first, lets create a basic map just showing some of the above layers
+  
+  ggplot() + 
+    geom_sf(data = world_map)+
+    geom_sf(data = lakes50, fill = "lightcyan")+
+    geom_sf(data = glaciated_areas50, fill = 'hotpink')+
+    theme(panel.background = element_rect(fill='lightcyan'))+
+    coord_sf(xlim = c(-170, -50), ylim = c(0, 70))
+  
+#now let's add the coordinates for our species of interest
+  
+  coords <- albicans[,c("decimalLongitude","decimalLatitude")] #pick out the columns with coordinates
+  
+  (albicans_base_map <- ggplot() + 
+    geom_sf(data = world_map)+
+    geom_sf(data = states, col = 'black')+
+    geom_sf(data = lakes50, fill = "lightcyan")+
+    geom_sf(data = rivers50, col = 'darkblue')+
+    theme(panel.background = element_rect(fill='lightcyan'))+
+    geom_point(data = as.data.frame(coords), aes(x = coords[, 1], y = coords[, 2]), color = "darkgreen")+
+    xlim(c(range(coords$decimalLongitude)[1] - 2, range(coords$decimalLongitude)[2] + 2))+
+    ylim(c(range(coords$decimalLatitude)[1] - 2, range(coords$decimalLatitude)[2] + 2))+
+    ylab('Latitude') + xlab('Longitude'))
+  
+#next, let's create a basic convex hull polygon defining the approximate boundaries of the species range
+  
+  convex_hull <- chull(coords) #creates a vector defining the vertices of the polygon
+  
+  hull_coords <- data.frame(coords[c(convex_hull, convex_hull[1]), ]) #assigns coordinates to each vertex
+  
+  albicans_base_map +
+    geom_polygon(data = hull_coords, aes(x = decimalLongitude, y = decimalLatitude), 
+                 fill = "lightgreen", color = "darkgrey", alpha = 0.3)
+  
+  ## This looks fine, but what if we want to omit the areas where we know this species does not occur (e.g. open ocean and lakes)
+  
+  ocean <- ne_download(scale = 50, type = 'ocean', category = 'physical', returnclass = 'sf')
+  
+  ocean #note that when we examine this object, it is of class 'multipolygon' and has the WGS 84 coordinate reference system
+  
+  points_sf <- st_as_sf(coords, coords = c("decimalLongitude","decimalLatitude")) #this time, use a different approach for defining the convex hull. First, create an SF object based on coordinates (geometry type = point)
+  
+  convex_hull <- st_convex_hull(st_union(points_sf)) #convert the points object into a polygon object
+  
+  hull <- convex_hull %>% st_set_crs(st_crs(ocean)) #set the coordinate reference system to be the same between each layer
+  
+  pared_range <- st_intersection(ocean, hull) #create a new multipolygon object defined by the area where the ocean and hull layers do not overlap
+  
+albicans_base_map +
+  geom_sf(data = pared_range, fill = 'lightgreen', color = 'darkgrey', alpha = 0.3)
+  
+#calculate the area of this resulting object
+
+st_area(pared_range)
+  
+### A quick demo of using different coordinate reference systems
+
+
+
+  
+  ## Working with RASTER data ----
   
   ## loading one raster at a time 
     # loading
