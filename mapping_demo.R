@@ -12,7 +12,7 @@
              "sp","mapview", "ggmap",
              "tidyverse","ggplot2",
               "here", "rgdal","rgeos",
-              "elevatr","rnaturalearth")
+              "elevatr","rnaturalearth","ggmap")
   
   # installing and loading
   for (i in libs){
@@ -42,8 +42,6 @@
   
   states <- ne_states(returnclass = 'sf') #include a layer for state boundaries
   
-  #
-  
 #lets create a basic map just showing some of the above layers, cropping to focus on North America
   
   ggplot() + 
@@ -57,6 +55,8 @@
 #now let's add the coordinates for our species of interest
   
   coords <- albicans[,c("decimalLongitude","decimalLatitude")] #pick out the columns with coordinates
+  
+  #creating a static map with data layers
   
   (albicans_base_map <- ggplot() + 
     geom_sf(data = world_map)+
@@ -132,7 +132,53 @@ base_canada_map+
 base_canada_map+
   coord_sf(crs = "+proj=robin +lon_0=0w") #Robinson projection
 
+### Custom shape files
 
+#Downloaded shape file for Rocky Mountain National Park here: https://romo-nps.opendata.arcgis.com/datasets/7cb5f22df8c44900a9f6632adb5f96a5/explore?location=40.296464%2C-105.702647%2C7.00
+
+rmnp <- read_sf('./Rocky_Mountain_National_Park_-_Boundary_Polygon/Rocky_Mountain_National_Park_-_Boundary_Polygon/Boundary__Polygon_.shp')
+
+colorado <- states[states$name == 'Colorado',]
+
+ggplot()+
+  geom_sf(data = colorado, fill = 'ivory')+
+  geom_sf(data = rmnp, fill = 'darkgreen')
+
+#using mapView for interactive plotting of coordinates
+
+coords
+
+Asclepias_ablicans <- st_as_sf(coords, coords = c('decimalLongitude','decimalLatitude'))
+
+st_crs(Asclepias_ablicans) <- 4326 #assigns WGS84 coordinate system to sf object
+
+mapView(Asclepias_ablicans)
+
+#using ggmap to create static maps that utilize Google Maps 
+
+register_google(key = "api key here-M")  #note, you must register for an API key through Google: https://support.google.com/googleapi/answer/6158862?hl=en
+
+albicans_map_satellite <- get_map("Ensenada, Baja California, Mexico", zoom=5, maptype="satellite", source="google")
+
+ggmap(albicans_map_satellite)+
+  theme_bw()+
+  geom_point(data = as.data.frame(coords), aes(x = coords[, 1], y = coords[, 2]), color = "yellow", size = 1)+
+  theme(axis.text = element_blank(), axis.title = element_blank())
+
+vancouver_map_terrain <- get_map("Vancouver, BC, Canada", zoom=11, maptype="terrain", source="google")
+
+ggmap(vancouver_map_terrain)+
+  theme_bw()+
+  theme(axis.text = element_blank(), axis.title = element_blank())
+
+#ggmap package also includes the potentially handy 'geocode' function
+
+golf_course <- geocode(location = 'university golf club, ubc, vancouver')
+
+ggmap(vancouver_map_terrain)+
+  theme_bw()+
+  theme(axis.text = element_blank(), axis.title = element_blank())+
+  geom_point(data = data.frame(golf_course), aes(x = lon, y = lat), col = 'hotpink', size = 5)
 
 #################################################################################### 
   
