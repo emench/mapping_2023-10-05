@@ -22,7 +22,8 @@
     library(i,character.only = TRUE)
   }
 
-  
+#################################################################################### 
+   
 ## Working with VECTOR data ----
   
   albicans <- read.csv(file = './Asclepias_albicans.csv')
@@ -41,11 +42,14 @@
   
   states <- ne_states(returnclass = 'sf') #include a layer for state boundaries
   
-#first, lets create a basic map just showing some of the above layers
+  #
+  
+#lets create a basic map just showing some of the above layers, cropping to focus on North America
   
   ggplot() + 
     geom_sf(data = world_map)+
     geom_sf(data = lakes50, fill = "lightcyan")+
+    geom_sf(data = states, fill = 'ivory')+
     geom_sf(data = glaciated_areas50, fill = 'hotpink')+
     theme(panel.background = element_rect(fill='lightcyan'))+
     coord_sf(xlim = c(-170, -50), ylim = c(0, 70))
@@ -85,21 +89,52 @@
   
   convex_hull <- st_convex_hull(st_union(points_sf)) #convert the points object into a polygon object
   
-  hull <- convex_hull %>% st_set_crs(st_crs(ocean)) #set the coordinate reference system to be the same between each layer
+  hull <- convex_hull %>% st_set_crs(st_crs(ocean)) #set the coordinate reference system to be the same between each layer; otherwise any spatial transform operation will throw an error
   
   pared_range <- st_intersection(ocean, hull) #create a new multipolygon object defined by the area where the ocean and hull layers do not overlap
   
-albicans_base_map +
-  geom_sf(data = pared_range, fill = 'lightgreen', color = 'darkgrey', alpha = 0.3)
-  
+  ggplot() + 
+    geom_sf(data = world_map)+
+    geom_sf(data = states, col = 'black')+
+    geom_sf(data = lakes50, fill = "lightcyan")+
+    theme(panel.background = element_rect(fill='lightcyan'))+
+    xlim(c(range(coords$decimalLongitude)[1] - 2, range(coords$decimalLongitude)[2] + 2))+
+    ylim(c(range(coords$decimalLatitude)[1] - 2, range(coords$decimalLatitude)[2] + 2))+
+    geom_sf(data = pared_range, fill = 'lightgreen', color = 'darkgrey', alpha = 0.7)
+    
 #calculate the area of this resulting object
 
-st_area(pared_range)
+st_area(pared_range) #defaults to area in m^2
+
+as.numeric(st_area(pared_range)) / 1e7 #convert to km^2
+
+#Cheatsheet for spatial transform operations in sf: https://github.com/rstudio/cheatsheets/blob/main/sf.pdf
   
-### A quick demo of using different coordinate reference systems
+### A quick demo of using different coordinate reference systems and projections
+
+canada <- world_map[world_map$sovereignt == 'Canada',] #first select only Canada for demonstration purposes
+provinces <- states[states$sov_a3 == 'CAN',] #pick out provincial borders
+
+(base_canada_map <- ggplot()+
+  geom_sf(data = canada)+
+  geom_sf(data = provinces)+
+  theme(panel.background = element_rect(fill='lightcyan'))) #create basic map of Canada and its provinces
+
+base_canada_map+
+  coord_sf(crs = st_crs(4326)) #standard WGS 84 coordinate system (same as above, this is the default)
+
+base_canada_map+
+  coord_sf(crs = st_crs(3347)) #Lambert projection
+
+base_canada_map+
+  coord_sf(crs = st_crs(3857)) #Mercator projection
+
+base_canada_map+
+  coord_sf(crs = "+proj=robin +lon_0=0w") #Robinson projection
 
 
 
+#################################################################################### 
   
   ## Working with RASTER data ----
   
